@@ -31,7 +31,10 @@ for i=1:size(inp,2)
        interm=interm(h_len+1:h_len+size(inp,1));
     %end
     %plot(interm,'--r');
+    
+
     model_interm(:,i)=interm(1:length(outp));  %truncate interm
+
     %model_interm(:,i)=interm;
     
     if pm==0   %No N stage

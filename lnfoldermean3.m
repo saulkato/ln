@@ -32,7 +32,7 @@ function lnmstruct=lnfoldermean2(foldername,options,quickflag)
     if isfield(options,'trialestflag')
         trialestflag=options.trialestflag;
     else
-        trialestflag=0;
+        trialestflag=1;
     end
     
     if isfield(options,'kerneltime')
@@ -104,13 +104,13 @@ function lnmstruct=lnfoldermean2(foldername,options,quickflag)
     if isfield(options,'nltype')
         nltype=options.nltype;
     else
-        nltype='pows'; %'pows';
+        nltype='poly5'; %'pows';
     end
     
     if isfield(options,'svd_len')
         svd_len=options.svd_len;
     else
-        svd_len=150;  %50
+        svd_len=50; %150
     end
     
     if isfield(options,'meanquantizeflag')
@@ -123,13 +123,13 @@ function lnmstruct=lnfoldermean2(foldername,options,quickflag)
     if isfield(options,'odefitflag')
         odefitflag=options.odefitflag;
     else
-        odefitflag=1;
+        odefitflag=false;
     end
     
     if isfield(options,'odeplotflag')
         odeplotflag=options.odeplotflag;
     else
-        odeplotflag=1;
+        odeplotflag=false;
     end
     
     if isfield(options,'odemodeltype')
@@ -172,6 +172,7 @@ function lnmstruct=lnfoldermean2(foldername,options,quickflag)
     end
     
 %run lnest on mean i/o
+
 [dye,dyetime,filename]=loaddyefolder(foldername);
 [xpos,ypos,traces,time,filename,metadata,baseline]=loadlogfolder(foldername);
 
@@ -349,22 +350,33 @@ if plots
         plot(irv,(nfn([refawcnpm refLNstruct.lns{1}.intermrng(1)],refirv,nltype)-refnmin)/(refnmax-refnmin)*(nfn(lnmstruct.npm,irv(end),nltype)-nfn(lnmstruct.npm,irv(1),nltype))+nfn(lnmstruct.npm,irv(1),nltype),'r');
     end
 
-    
-     [odemodel_simout,odevaf1,odevaf2,model_interm,sse2]=lneval2(lnmstruct.inp,lnmstruct.ode.ltikernelextrap*lnmstruct.hgain,lnmstruct.npm,lnmstruct.nltype,lnmstruct.trueout,0,1,0,0.5);
-
+    if odefitflag
+       [odemodel_simout,odevaf1,odevaf2,model_interm,sse2]=lneval2(lnmstruct.inp,lnmstruct.ode.ltikernelextrap*lnmstruct.hgain,lnmstruct.npm,lnmstruct.nltype,lnmstruct.trueout,0,1,0,0.5);
+    end
     
     %write out information
     subplot(nr,nc,nc*(plotrow-1)+4);
     ax=axis;
-    txt={['n=' num2str(size(traces,2))];...
-        ['mean VAF (LN)=',num2str(lnmstruct.vaf2,3),'%'];...
+    
+    if odefitflag
+         txt={['n=' num2str(size(traces,2))];...
+         ['mean VAF (LN)=',num2str(lnmstruct.vaf2,3),'%'];...
          ['mean VAF (L only)=',num2str(lnmstruct.vaf1,3),'%'];...
-        ['L length=',num2str(h_len),' samples'];['SVD comps=',num2str(svd_len)];...   
+         ['L length=',num2str(h_len),' samples'];['SVD comps=',num2str(svd_len)];...   
          ['dt=',num2str(dt),' s'];['frame range= [',num2str(rng(1)),'-',num2str(rng(2)),']'];...
          ['N func=',nltype];['detrend=',detrendtype];...
          ['flags:',flagstr];...
          ['mean VAF (LN-ODE)=',num2str(odevaf2,3),'%'];...
          ['ODE params: ',num2str(lnmstruct.ode.ltikernel_pm,4)];...
+         };
+    else
+         txt={['n=' num2str(size(traces,2))];...
+         ['mean VAF (LN)=',num2str(lnmstruct.vaf2,3),'%'];...
+         ['mean VAF (L only)=',num2str(lnmstruct.vaf1,3),'%'];...
+         ['L length=',num2str(h_len),' samples'];['SVD comps=',num2str(svd_len)];...   
+         ['dt=',num2str(dt),' s'];['frame range= [',num2str(rng(1)),'-',num2str(rng(2)),']'];...
+         ['N func=',nltype];['detrend=',detrendtype];...
+         ['flags:',flagstr];...
          };
      
     text(ax(1),ax(4),txt,'VerticalAlignment','top');

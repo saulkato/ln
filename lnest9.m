@@ -1,4 +1,4 @@
-function lnstruct=lnest9(input,output,hlen,svdlength,range,estmethod,plots,detrendtype,nltype,hlen2,iter,derivflag,crossvalopts)
+function lnstruct=lnest9(input,output,hlen,svdlength,range,estmethod,plotoptions,detrendtype,nltype,hlen2,iter,derivflag,crossvalopts)
 %lnstruct=lnest9(input,output,hlen,svdlength,range,estmethod,plots,detrendtype,nltype,hlen2,iter)
 %lnstruct fields: h_est npm gain offset shift vaf1 vaf2 interm simtrace hhat2 inp_offset outp_offset
 %
@@ -47,7 +47,7 @@ else
 end
 if (nargin<9) nltype='powns'; end
 if (nargin<8) detrendtype='constant'; end
-if (nargin<7) plots=0; end
+if (nargin<7) plotoptions=[]; end
 if (nargin<6) estmethod=1; end %full regression method
 if (nargin<5)
     range=[1 size(input,1)];
@@ -93,8 +93,6 @@ N=size(input,2);  %number of trials
 
 %% LEST section
 
-nltype
-
     [hhat hhat_causal vafout1 vafout1_causal interm interm_causal hgain]=kernelest(inp,outp,hlen,svdlength,estmethod,hlen2);
 
 %% Now do NEST
@@ -113,9 +111,7 @@ nltype
 
     %VAF of full L-N system
     [simtrace,vaf1,vaf2,interm]=lneval2(inp,hhat*hgain,npm,nltype,outp,0,0,hlen2,0.5);
-
-   
-    
+  
 %% ITERATION METHOD
 %re-estimate linear kernel, only for 2-sided filter now.
 %
@@ -134,7 +130,7 @@ nltype
 
         end
 
-        if plots==1
+        if plotoptions.makePlotFlag==1
             figure('Position',[0 0 800 800]);
             subplot(2,2,1);
             plot(hhat_iter);
@@ -145,9 +141,7 @@ nltype
             plot(interm2-shift,nfn(npm_iter(i+1,:),interm2-shift,nltype),'k');
             plot(inverse_interm-shift,outp,'.g');
         end
-
-
-        
+     
         [notused,vaf2L,vaf2,notused3]=lneval2(inp,hhat*hgain,npm,nltype,outp,0,0,hlen2,0.5);
         [notused,vaf2Li,vaf2i,notused3]=lneval2(inp,hhat_iter(:,i)*hgain_iter(i),npm_iter(i,:),nltype,outp,0,0,hlen2,0.5);
         
@@ -176,27 +170,44 @@ nltype
     gain=nfn(npm,.1,nltype); %set gain to polynomial value at 1;
 
 %% plots and struct output
-    if plots
-        figure;
-        subplot(4,1,1);
-        plot(inp,'b');
-
-        subplot(4,1,2);
-        plot(outp,'r');
+    if plotoptions.makePlotFlag
+       % figure;
+        subplot(3,2,1:2);
+        xlim([1 length(inp)]);
+        hline(0);
+        hold on;
+        h1=plot(inp,'b');
+        legend(h1,{'input'});
+        intitle(['input: ' plotoptions.inputLabel]);
+        
+        subplot(3,2,3:4);
+        xlim([1 length(outp)]);
+        hline(0);
+        hold on;
+        h2=plot(outp,'r');
         hold on;
         %plot(interm(1:length(outp)),'b');
-        plot(nfn(npm,interm(1:length(outp)),nltype),'g');  
-
-        subplot(4,1,3);
-        plot(-hlen2+1:hlen,hhat,'.-');
+        h3=plot(nfn(npm,interm(1:length(outp)),nltype),'g');  
+        legend([h2 h3],{'output','model'});
+        intitle(['output: ' plotoptions.outputLabel]);
+            
+        subplot(3,2,5);
+        xlim([-hlen2 hlen-1]);
+        ylim([min(hhat) max(hhat)]);
         hline(0);
+        hold on;
         vline(0);
+        plot(-hlen2:hlen-1,hhat,'.-');
 
-        subplot(4,1,4);
+        subplot(3,2,6);
+        xlim([min(interm(1:length(outp))) max(interm(1:length(outp)))]);
+        ylim([min(outp) max(outp)]);
         scatter(interm(1:length(outp)),outp,8,1:length(outp),'filled');
         hold on;
         ndomain=linspace(min(interm),max(interm));
         plot(ndomain,nfn(npm,ndomain,nltype),'LineWidth',3,'Color','r');
+        
+        textur(['vaf ' num2str(vaf2*heaviside(vaf2),3) '%']);
         %legend([num2str(vafout) ; num2str(vaf2)]);
     end
 
